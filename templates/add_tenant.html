@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Add Tenant</h3>
+
+<form method="POST">
+
+    <label>Assign Unit</label>
+    <select name="unit_id" class="form-control mb-3" required>
+        <option value="">Select Unit</option>
+        {% for unit in units %}
+        <option value="{{ unit[0] }}">{{ unit[1] }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="text" name="full_name" class="form-control mb-3" placeholder="Full Name" required>
+
+    <input type="text" name="phone" class="form-control mb-3" placeholder="Phone Number" required>
+
+    <input type="text" name="id_number" class="form-control mb-3" placeholder="ID Number" required>
+
+    <input type="date" name="move_in_date" class="form-control mb-3" required>
+
+    <button class="btn btn-dark">Save Tenant</button>
+
+</form>
+
+{% endblock %}

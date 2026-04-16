@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Edit Payment</h3>
+
+<form method="POST">
+
+    <!-- Tenant -->
+    <label>Tenant</label>
+    <select name="tenant_id" class="form-control mb-3" required>
+        {% for tenant in tenants %}
+        <option value="{{ tenant[0] }}" {% if tenant[0]==payment[1] %} selected {% endif %}>
+            {{ tenant[1] }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Amount -->
+    <input type="number" name="amount" class="form-control mb-3" value="{{ payment[2] }}" required>
+
+    <!-- Date -->
+    <input type="date" name="payment_date" class="form-control mb-3" value="{{ payment[3] }}" required>
+
+    <!-- Method -->
+    <select name="payment_method" class="form-control mb-3">
+        <option value="cash" {% if payment[4]=='cash' %}selected{% endif %}>Cash</option>
+        <option value="mpesa" {% if payment[4]=='mpesa' %}selected{% endif %}>M-Pesa</option>
+    </select>
+
+    <!-- M-Pesa -->
+    <input type="text" name="mpesa_code" class="form-control mb-3" value="{{ payment[5] }}">
+
+    <button class="btn btn-success">Update Payment</button>
+
+</form>
+
+{% endblock %}

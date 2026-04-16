@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-4">Dashboard</h2>
+
+<div class="row">
+
+    <div class="col-md-3">
+        <div class="card text-white bg-primary shadow">
+            <div class="card-body">
+                <h5>Total Tenants</h5>
+                <h2>{{ total_tenants }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body">
+                <h5>Total Units</h5>
+                <h2>{{ total_units }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning shadow">
+            <div class="card-body">
+                <h5>Vacant Units</h5>
+                <h2>{{ vacant_units }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-dark shadow">
+            <div class="card-body">
+                <h5>Total Income</h5>
+                <h2>KES {{ total_income }}</h2>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

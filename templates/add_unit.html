@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Add Unit</h3>
+
+<form method="POST">
+
+    <label>Property</label>
+    <select name="property_id" class="form-control mb-3" required>
+        <option value="">Select Property</option>
+        {% for property in properties %}
+        <option value="{{ property[0] }}">{{ property[1] }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="text" name="unit_number" class="form-control mb-3" placeholder="Unit Number (A1, B2)" required>
+
+    <input type="number" name="rent_amount" class="form-control mb-3" placeholder="Rent Amount" required>
+
+    <button class="btn btn-dark">Save Unit</button>
+
+</form>
+
+{% endblock %}

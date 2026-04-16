@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Edit Property</h3>
+
+<form method="POST">
+
+    <input type="text" name="name" class="form-control mb-3" value="{{ property[2] }}" required>
+
+    <input type="text" name="location" class="form-control mb-3" value="{{ property[3] }}" required>
+
+    <button class="btn btn-success">Update Property</button>
+
+</form>
+
+{% endblock %}

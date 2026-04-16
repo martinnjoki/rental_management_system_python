@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Defaulters (Arrears)</h3>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Tenant</th>
+        <th>Unit</th>
+        <th>Rent</th>
+        <th>Paid</th>
+        <th>Balance</th>
+    </tr>
+
+    {% for row in arrears %}
+    <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+        <td>{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+        <td style="color:red;">{{ row[4] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Properties</h3>
+
+<a href="/add_property" class="btn btn-primary mb-3">Add Properties</a>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Location</th>
+        <th>Action</th>
+    </tr>
+    {% for property in properties %}
+    <tr>
+        <td>{{ property[0] }}</td>
+        <td>{{ property[2] }}</td>
+        <td>{{ property[3] }}</td>
+        <td>
+            <a href="/edit_property/{{ property[0] }}" class="btn btn-sm btn-warning">Edit</a>
+        </td>
+    </tr>
+
+    {% endfor %}
+
+</table>
+{% endblock %}

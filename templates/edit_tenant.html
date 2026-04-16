@@ -1,0 +1,17 @@
+{% block content %}
+
+<h3>Edit Tenant</h3>
+
+<form method="POST">
+
+    <input type="text" name="full_name" class="form-control mb-3" value="{{ tenant[2] }}" required>
+
+    <input type="text" name="phone" class="form-control mb-3" value="{{ tenant[3] }}" required>
+
+    <input type="text" name="id_number" class="form-control mb-3" value="{{ tenant[4] }}" required>
+
+    <button class="btn btn-success">Update Tenant</button>
+
+</form>
+
+{% endblock %}

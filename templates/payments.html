@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Payments</h3>
+
+<a href="{{ url_for('add_payment') }}" class="btn btn-primary mb-3">Add Payment</a>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID</th>
+        <th>Tenant</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Method</th>
+        <th>M-Pesa Code</th>
+        <th>Payments</th>
+        <th>Action</th>
+    </tr>
+
+    {% for payment in payments %}
+    <tr>
+        <td>{{ payment[0] }}</td>
+        <td>{{ payment[1] }}</td>
+        <td>{{ payment[2] }}</td>
+        <td>{{ payment[3] }}</td>
+        <td>{{ payment[4] }}</td>
+        <td>{{ payment[5] }}</td>
+        <td>
+            <a href="{{ url_for('receipt', payment_id=payment[0]) }}" class="btn btn-success btn-sm">
+                Receipt
+            </a>
+        </td>
+        <td>
+            <a href="/edit_payment/{{ payment[0] }}" class="btn btn-sm btn-warning">
+                Edit
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

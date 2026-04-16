@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Tenants</h3>
+
+<a href="{{ url_for('add_tenant') }}" class="btn btn-primary mb-3">Add Tenant</a>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Unit</th>
+        <th>Move In Date</th>
+        <th>Action</th>
+    </tr>
+
+    {% for tenant in tenants %}
+    <tr>
+        <td>{{ tenant[0] }}</td>
+        <td>{{ tenant[1] }}</td>
+        <td>{{ tenant[2] }}</td>
+        <td>{{ tenant[3] }}</td>
+        <td>{{ tenant[4] }}</td>
+        <td><a href="/edit_tenant/{{ tenant[0] }}" class="btn btn-sm btn-warning">Edit</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
