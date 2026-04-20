@@ -2,44 +2,74 @@
 
 {% block content %}
 
-<h2 class="mb-4">Dashboard</h2>
+<div class="container mt-4">
 
-<div class="row">
+    <h3 class="mb-4">Dashboard Overview</h3>
 
-    <div class="col-md-3">
-        <div class="card text-white bg-primary shadow">
-            <div class="card-body">
-                <h5>Total Tenants</h5>
-                <h2>{{ total_tenants }}</h2>
+    <div class="row">
+
+        <!-- Properties -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow border-0 text-white bg-primary">
+                <div class="card-body">
+                    <h5>Total Properties</h5>
+                    <h2>{{ total_properties }}</h2>
+                    <i class="bi bi-building fs-1"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card text-white bg-success shadow">
-            <div class="card-body">
-                <h5>Total Units</h5>
-                <h2>{{ total_units }}</h2>
+        <!-- Units -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow border-0 text-white bg-success">
+                <div class="card-body">
+                    <h5>Total Units</h5>
+                    <h2>{{ total_units }}</h2>
+                    <i class="bi bi-house-door fs-1"></i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card text-white bg-warning shadow">
+        <!-- Tenants -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow border-0 text-white bg-info">
+                <div class="card-body">
+                    <h5>Total Tenants</h5>
+                    <h2>{{ total_tenants }}</h2>
+                    <i class="bi bi-people fs-1"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow border-0 text-white bg-dark">
+                <div class="card-body">
+                    <h5>Total Payments (KES)</h5>
+                    <h2>{{ total_payments }}</h2>
+                    <i class="bi bi-cash-stack fs-1"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arrears -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow border-0 text-white bg-danger">
+                <div class="card-body">
+                    <h5>Tenants in Arrears</h5>
+                    <h2>{{ arrears_count }}</h2>
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                </div>
+            </div>
+        </div>
+        <!--Vacant Units-->
+        <div class="card bg-warning text-white">
             <div class="card-body">
                 <h5>Vacant Units</h5>
                 <h2>{{ vacant_units }}</h2>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card text-white bg-dark shadow">
-            <div class="card-body">
-                <h5>Total Income</h5>
-                <h2>KES {{ total_income }}</h2>
-            </div>
-        </div>
     </div>
 
 </div>

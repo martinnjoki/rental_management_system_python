@@ -61,38 +61,57 @@ def login():
 
 #dashboard
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Total tenants
-    cur.execute("SELECT COUNT(*) FROM tenants")
-    total_tenants = cur.fetchone()[0]
+    # Total properties
+    cur.execute("SELECT COUNT(*) FROM properties")
+    total_properties = cur.fetchone()[0]
 
     # Total units
     cur.execute("SELECT COUNT(*) FROM units")
     total_units = cur.fetchone()[0]
 
-    # Vacant units
+    # Total tenants
+    cur.execute("SELECT COUNT(*) FROM tenants")
+    total_tenants = cur.fetchone()[0]
+
+    # Total payments
+    cur.execute("SELECT COALESCE(SUM(amount_paid),0) FROM payments")
+    total_payments = cur.fetchone()[0]
+    #Vacant unit
     cur.execute("SELECT COUNT(*) FROM units WHERE status='vacant'")
     vacant_units = cur.fetchone()[0]
 
-    # Total income
-    cur.execute("SELECT COALESCE(SUM(amount_paid), 0) FROM payments")
-    total_income = cur.fetchone()[0]
+    # Arrears count (current month)
+    from datetime import date
+    current_month = date.today().replace(day=1)
+
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM tenants
+        JOIN units ON tenants.unit_id = units.id
+        LEFT JOIN payments 
+            ON tenants.id = payments.tenant_id 
+            AND payments.payment_month = %s
+        GROUP BY tenants.id, units.rent_amount
+        HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid),0)) > 0
+    """, (current_month,))
+
+    arrears_count = len(cur.fetchall())
 
     cur.close()
     conn.close()
 
     return render_template('dashboard.html',
-                           total_tenants=total_tenants,
+                           total_properties=total_properties,
                            total_units=total_units,
+                           total_tenants=total_tenants,
+                           total_payments=total_payments,
                            vacant_units=vacant_units,
-                           total_income=total_income)
+                           arrears_count=arrears_count)
 #logout
 @app.route('/logout')
 def logout():
@@ -509,7 +528,7 @@ def register():
     return render_template('register.html')
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
 
 
 
