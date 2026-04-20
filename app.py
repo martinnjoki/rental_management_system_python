@@ -6,6 +6,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from psycopg2 import errors
 import psycopg2
+import os
+from flask_sqlalchemy import SQLAlchemy
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -25,8 +27,28 @@ def get_db_connection():
     return conn
 
 
+
+
 app = Flask(__name__)
-app.secret_key = 'secret123'
+
+db = SQLAlchemy()
+# SECRET KEY
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY") or "mysecret123"
+
+import os
+uri = os.getenv("DATABASE_URL")
+
+if not uri:
+    uri = "sqlite:///users.sqlite3"
+
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
 
 
 
@@ -63,55 +85,60 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    conn = get_db_connection()
-    cur = conn.cursor()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    # Total properties
-    cur.execute("SELECT COUNT(*) FROM properties")
-    total_properties = cur.fetchone()[0]
+        print("Step 1")
+        cur.execute("SELECT COUNT(*) FROM properties")
+        total_properties = cur.fetchone()[0]
 
-    # Total units
-    cur.execute("SELECT COUNT(*) FROM units")
-    total_units = cur.fetchone()[0]
+        print("Step 2")
+        cur.execute("SELECT COUNT(*) FROM units")
+        total_units = cur.fetchone()[0]
 
-    # Total tenants
-    cur.execute("SELECT COUNT(*) FROM tenants")
-    total_tenants = cur.fetchone()[0]
+        print("Step 3")
+        cur.execute("SELECT COUNT(*) FROM tenants")
+        total_tenants = cur.fetchone()[0]
 
-    # Total payments
-    cur.execute("SELECT COALESCE(SUM(amount_paid),0) FROM payments")
-    total_payments = cur.fetchone()[0]
-    #Vacant unit
-    cur.execute("SELECT COUNT(*) FROM units WHERE status='vacant'")
-    vacant_units = cur.fetchone()[0]
+        print("Step 4")
+        cur.execute("SELECT COALESCE(SUM(amount_paid),0) FROM payments")
+        total_payments = cur.fetchone()[0]
 
-    # Arrears count (current month)
-    from datetime import date
-    current_month = date.today().replace(day=1)
+        print("Step 5")
+        cur.execute("SELECT COUNT(*) FROM units WHERE status='vacant'")
+        vacant_units = cur.fetchone()[0]
 
-    cur.execute("""
-        SELECT COUNT(*)
-        FROM tenants
-        JOIN units ON tenants.unit_id = units.id
-        LEFT JOIN payments 
-            ON tenants.id = payments.tenant_id 
-            AND payments.payment_month = %s
-        GROUP BY tenants.id, units.rent_amount
-        HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid),0)) > 0
-    """, (current_month,))
+        print("Step 6 - arrears")
+        from datetime import date
+        current_month = date.today().replace(day=1)
 
-    arrears_count = len(cur.fetchall())
+        cur.execute("""
+            SELECT COUNT(*)
+            FROM tenants
+            JOIN units ON tenants.unit_id = units.id
+            LEFT JOIN payments 
+                ON tenants.id = payments.tenant_id 
+                AND payments.payment_month = %s
+            GROUP BY tenants.id, units.rent_amount
+            HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid),0)) > 0
+        """, (current_month,))
 
-    cur.close()
-    conn.close()
+        arrears_count = len(cur.fetchall())
 
-    return render_template('dashboard.html',
-                           total_properties=total_properties,
-                           total_units=total_units,
-                           total_tenants=total_tenants,
-                           total_payments=total_payments,
-                           vacant_units=vacant_units,
-                           arrears_count=arrears_count)
+        cur.close()
+        conn.close()
+
+        return render_template('dashboard.html',
+                               total_properties=total_properties,
+                               total_units=total_units,
+                               total_tenants=total_tenants,
+                               total_payments=total_payments,
+                               vacant_units=vacant_units,
+                               arrears_count=arrears_count)
+
+    except Exception as e:
+        return f"Error occurred: {e}"
 #logout
 @app.route('/logout')
 def logout():
