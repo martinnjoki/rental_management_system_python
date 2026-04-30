@@ -61,7 +61,9 @@ def get_database_path():
 
 def init_db():
     db_path = get_database_path()
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    db_dir = os.path.dirname(db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
 
     connection = sqlite3.connect(db_path)
