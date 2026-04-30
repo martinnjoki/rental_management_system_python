@@ -15,4 +15,4 @@ RUN mkdir -p /app/data
 
 EXPOSE 5050
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "--timeout", "60", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5050", "--workers", "3", "--timeout", "60", "app:app"]
