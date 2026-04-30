@@ -1,55 +1,36 @@
-from flask import Flask, render_template, request, redirect, session, url_for, send_file, flash
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from datetime import date
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-from psycopg2 import errors
-import psycopg2
 import os
+from datetime import date
+from functools import wraps
+
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from sqlalchemy import event as sa_event, func, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from models import Payment, Property, Tenant, Unit, User, db
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user' not in session:
-            return redirect(url_for('login'))
+        if "user" not in session:
+            return redirect(url_for("login"))
         return f(*args, **kwargs)
+
     return decorated_function
-
-class SQLiteCursorAdapter:
-    def __init__(self, cursor):
-        self._cursor = cursor
-
-    def execute(self, query, params=None):
-        sqlite_query = query.replace("%s", "?")
-        if params is None:
-            return self._cursor.execute(sqlite_query)
-        return self._cursor.execute(sqlite_query, params)
-
-    def fetchone(self):
-        return self._cursor.fetchone()
-
-    def fetchall(self):
-        return self._cursor.fetchall()
-
-    def close(self):
-        return self._cursor.close()
-
-
-class SQLiteConnectionAdapter:
-    def __init__(self, connection):
-        self._connection = connection
-
-    def cursor(self):
-        return SQLiteCursorAdapter(self._connection.cursor())
-
-    def commit(self):
-        return self._connection.commit()
-
-    def rollback(self):
-        return self._connection.rollback()
-
-    def close(self):
-        return self._connection.close()
 
 
 def get_database_path():
@@ -59,351 +40,311 @@ def get_database_path():
     return os.path.join(os.path.dirname(__file__), configured_path)
 
 
-def init_db():
+def ensure_db_directory():
     db_path = get_database_path()
-    db_dir = os.path.dirname(db_path)
-    if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
-    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
-
-    connection = sqlite3.connect(db_path)
-    with open(schema_path, "r", encoding="utf-8") as schema_file:
-        connection.executescript(schema_file.read())
-    connection.commit()
-    connection.close()
+    directory = os.path.dirname(db_path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
 
 
-def get_db_connection():
-    connection = sqlite3.connect(get_database_path())
-    connection.execute("PRAGMA foreign_keys = ON")
-    return SQLiteConnectionAdapter(connection)
+def sqlite_database_uri():
+    path = os.path.abspath(get_database_path())
+    return "sqlite:///" + path.replace("\\", "/")
 
 
+@sa_event.listens_for(Engine, "connect")
+def _sqlite_enable_foreign_keys(dbapi_connection, _connection_record):
+    cursor = None
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+    except Exception:
+        pass
+    finally:
+        if cursor is not None:
+            cursor.close()
 
 
 app = Flask(__name__)
-app.secret_key = 'secret123'
+app.secret_key = os.getenv("SECRET_KEY", "secret123")
+app.config["SQLALCHEMY_DATABASE_URI"] = sqlite_database_uri()
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+with app.app_context():
+    ensure_db_directory()
+    db.create_all()
 
 
-
-#Home
-@app.route('/')
+@app.route("/")
 def home():
-    return render_template('home.html')
+    return render_template("home.html")
 
 
-@app.route('/healthz')
+@app.route("/healthz")
 def healthz():
     return {"status": "ok"}, 200
-#login
-@app.route('/login', methods=['GET', 'POST'])
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-        conn = get_db_connection()
-        cur = conn.cursor()
+        user = User.query.filter_by(username=username).first()
 
-        cur.execute("SELECT * FROM users WHERE username=%s", (username,))
-        user = cur.fetchone()
-
-        cur.close()
-        conn.close()
-
-        if user and check_password_hash(user[2], password):
-            session['user'] = user[0]
+        if user and check_password_hash(user.password, password):
+            session["user"] = user.id
             flash("Login successful", "success")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Invalid username or password", "danger")
+            return redirect(url_for("dashboard"))
+        flash("Invalid username or password", "danger")
 
-    return render_template('login.html')
+    return render_template("login.html")
 
-#dashboard
-@app.route('/dashboard')
+
+@app.route("/dashboard")
 @login_required
 def dashboard():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+        total_properties = Property.query.count()
+        total_units = Unit.query.count()
+        total_tenants = Tenant.query.count()
+        total_payments = db.session.query(
+            func.coalesce(func.sum(Payment.amount_paid), 0)
+        ).scalar()
+        vacant_units = Unit.query.filter_by(status="vacant").count()
 
-        print("Step 1")
-        cur.execute("SELECT COUNT(*) FROM properties")
-        total_properties = cur.fetchone()[0]
+        current_month = date.today().replace(day=1).isoformat()
+        arrears_sql = text(
+            """
+            SELECT COUNT(*) FROM (
+                SELECT tenants.id
+                FROM tenants
+                JOIN units ON tenants.unit_id = units.id
+                LEFT JOIN payments
+                    ON tenants.id = payments.tenant_id
+                    AND payments.payment_month = :payment_month
+                GROUP BY tenants.id, units.rent_amount
+                HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid), 0)) > 0
+            )
+            """
+        )
+        arrears_count = db.session.execute(
+            arrears_sql, {"payment_month": current_month}
+        ).scalar()
 
-        print("Step 2")
-        cur.execute("SELECT COUNT(*) FROM units")
-        total_units = cur.fetchone()[0]
-
-        print("Step 3")
-        cur.execute("SELECT COUNT(*) FROM tenants")
-        total_tenants = cur.fetchone()[0]
-
-        print("Step 4")
-        cur.execute("SELECT COALESCE(SUM(amount_paid),0) FROM payments")
-        total_payments = cur.fetchone()[0]
-
-        print("Step 5")
-        cur.execute("SELECT COUNT(*) FROM units WHERE status='vacant'")
-        vacant_units = cur.fetchone()[0]
-
-        print("Step 6 - arrears")
-        from datetime import date
-        current_month = date.today().replace(day=1)
-
-        cur.execute("""
-            SELECT COUNT(*)
-            FROM tenants
-            JOIN units ON tenants.unit_id = units.id
-            LEFT JOIN payments 
-                ON tenants.id = payments.tenant_id 
-                AND payments.payment_month = %s
-            GROUP BY tenants.id, units.rent_amount
-            HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid),0)) > 0
-        """, (current_month,))
-
-        arrears_count = len(cur.fetchall())
-
-        cur.close()
-        conn.close()
-
-        return render_template('dashboard.html',
-                               total_properties=total_properties,
-                               total_units=total_units,
-                               total_tenants=total_tenants,
-                               total_payments=total_payments,
-                               vacant_units=vacant_units,
-                               arrears_count=arrears_count)
+        return render_template(
+            "dashboard.html",
+            total_properties=total_properties,
+            total_units=total_units,
+            total_tenants=total_tenants,
+            total_payments=total_payments,
+            vacant_units=vacant_units,
+            arrears_count=arrears_count or 0,
+        )
 
     except Exception as e:
         return f"Error occurred: {e}"
-#logout
-@app.route('/logout')
+
+
+@app.route("/logout")
 def logout():
-    session.pop('user', None)
+    session.pop("user", None)
     flash("Logged out successfully", "info")
-    return redirect(url_for('login'))
-#Adding Properties
-@app.route('/add_property', methods=['GET', 'POST'])
+    return redirect(url_for("login"))
+
+
+@app.route("/add_property", methods=["GET", "POST"])
 def add_property():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        location = request.form['location']
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO properties (name, location) VALUES(%s, %s)", (name, location))
+    if request.method == "POST":
+        name = request.form["name"]
+        location = request.form["location"]
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('properties'))
-    return render_template('add_property.html')
+        db.session.add(Property(name=name, location=location))
+        db.session.commit()
+        return redirect(url_for("properties"))
+    return render_template("add_property.html")
 
-#Adding Properties
-@app.route('/properties')
+
+@app.route("/properties")
 def properties():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    properties_list = Property.query.order_by(Property.id.desc()).all()
+
+    return render_template("properties.html", properties=properties_list)
 
 
-    cur.execute("SELECT * FROM properties ORDER BY id DESC")
-    properties = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return render_template('properties.html', properties=properties)
-
-#Tenants Route
-@app.route('/add_tenant', methods=['GET', 'POST'])
+@app.route("/add_tenant", methods=["GET", "POST"])
 def add_tenant():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur =conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    #Fetching Vacant Unit
-    cur.execute("SELECT id, unit_number FROM units WHERE status='vacant'")
+    units = Unit.query.filter_by(status="vacant").with_entities(Unit.id, Unit.unit_number).all()
 
-    units = cur.fetchall()
-
-    if request.method =='POST':
-        unit_id = request.form['unit_id']
-        full_name = request.form['full_name']
-        phone = request.form['phone']
-        id_number = request.form['id_number']
-        move_in_date = request.form['move_in_date']
-        #Data Validation
+    if request.method == "POST":
+        unit_id = request.form["unit_id"]
+        full_name = request.form["full_name"]
+        phone = request.form["phone"]
+        id_number = request.form["id_number"]
+        move_in_date = request.form["move_in_date"]
         if not full_name or not phone or not id_number:
             flash("All fields are required", "danger")
-            return redirect(url_for('add_tenant'))
-        if not phone.startswith('254') or len(phone) != 12 or not phone.isdigit():
+            return redirect(url_for("add_tenant"))
+        if not phone.startswith("254") or len(phone) != 12 or not phone.isdigit():
             flash("Phone must be in format 2547XXXXXXXX", "danger")
-            return redirect(url_for('add_tenant'))
+            return redirect(url_for("add_tenant"))
         if not id_number.isdigit():
             flash("ID number must be numeric", "danger")
-            return redirect(url_for('add_tenant'))
+            return redirect(url_for("add_tenant"))
 
-        #insert Tenants
-        cur.execute(""" INSERT INTO tenants (unit_id, full_name, phone, id_number, move_in_date)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (unit_id, full_name, phone, id_number, move_in_date))
-        #Updating unit status to be occupied
-        cur.execute(
-            "UPDATE units SET status='occupied' WHERE id=%s",
-            (unit_id,)
+        tenant = Tenant(
+            unit_id=unit_id,
+            full_name=full_name,
+            phone=phone,
+            id_number=id_number,
+            move_in_date=move_in_date,
         )
+        db.session.add(tenant)
 
-        conn.commit()
-        cur.close()
-        conn.close()
+        unit = db.session.get(Unit, int(unit_id))
+        if unit:
+            unit.status = "occupied"
 
-        return redirect(url_for('tenant'))
-    return render_template('add_tenant.html', units=units)
+        db.session.commit()
 
-#viewing Tenant Route
-@app.route('/tenants')
+        return redirect(url_for("tenants"))
+    return render_template("add_tenant.html", units=units)
+
+
+@app.route("/tenants")
 def tenants():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    cur.execute("""
-        SELECT tenants.id, tenants.full_name, tenants.phone,
-               units.unit_number, tenants.move_in_date
-        FROM tenants
-        LEFT JOIN units ON tenants.unit_id = units.id
-        ORDER BY tenants.id DESC
-    """)
+    tenants_list = (
+        db.session.query(
+            Tenant.id,
+            Tenant.full_name,
+            Tenant.phone,
+            Unit.unit_number,
+            Tenant.move_in_date,
+        )
+        .outerjoin(Unit, Tenant.unit_id == Unit.id)
+        .order_by(Tenant.id.desc())
+        .all()
+    )
 
-    tenants = cur.fetchall()
+    return render_template("tenants.html", tenants=tenants_list)
 
-    cur.close()
-    conn.close()
 
-    return render_template('tenants.html', tenants=tenants)
-
-#Adding Units
-@app.route('/add_unit', methods=['GET', 'POST'])
+@app.route("/add_unit", methods=["GET", "POST"])
 def add_unit():
-    if 'user' not in session:
-        return redirect(url_for('login'))
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    conn = get_db_connection()
-    cur = conn.cursor()
+    properties_rows = Property.query.with_entities(Property.id, Property.name).all()
 
-    # Fetch properties for dropdown
-    cur.execute("SELECT id, name FROM properties")
-    properties = cur.fetchall()
+    if request.method == "POST":
+        property_id = request.form["property_id"]
+        unit_number = request.form["unit_number"]
+        rent_amount = request.form["rent_amount"]
 
-    if request.method == 'POST':
-        property_id = request.form['property_id']
-        unit_number = request.form['unit_number']
-        rent_amount = request.form['rent_amount']
+        db.session.add(
+            Unit(
+                property_id=property_id,
+                unit_number=unit_number,
+                rent_amount=rent_amount,
+                status="vacant",
+            )
+        )
+        db.session.commit()
 
-        # 🔥 IMPORTANT: status must be 'vacant'
-        cur.execute("""
-            INSERT INTO units (property_id, unit_number, rent_amount, status)
-            VALUES (%s, %s, %s, %s)
-        """, (property_id, unit_number, rent_amount, 'vacant'))
+        return redirect(url_for("add_unit"))
+    return render_template("add_unit.html", properties=properties_rows)
 
-        conn.commit()
-        cur.close()
-        conn.close()
 
-        return redirect(url_for('add_unit'))
-    return render_template('add_unit.html', properties=properties)
-    
-#Payments Route
-@app.route('/add_payment', methods=['GET', 'POST'])
+@app.route("/add_payment", methods=["GET", "POST"])
 def add_payment():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    payment_month = date.today().replace(day=1)
-        
-    conn = get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
+    payment_month = date.today().replace(day=1).isoformat()
 
-    #Fetch Tenants
-    cur.execute("SELECT id, full_name FROM tenants")
-    tenants = cur.fetchall()
+    tenants_rows = Tenant.query.with_entities(Tenant.id, Tenant.full_name).all()
 
-    if request.method == 'POST':
-        tenant_id = request.form['tenant_id']
-        amount = request.form['amount']
-        payment_date = request.form['payment_date']
-        method = request.form['payment_method']
-        mpesa_code = request.form['mpesa_code']
+    if request.method == "POST":
+        tenant_id = request.form["tenant_id"]
+        amount = request.form["amount"]
+        payment_date = request.form["payment_date"]
+        method = request.form["payment_method"]
+        mpesa_code = request.form["mpesa_code"]
 
-        #Data Validation
         if not tenant_id or not amount or not payment_date:
             flash("All fields are required", "danger")
-            return redirect(url_for('add_payment'))
+            return redirect(url_for("add_payment"))
         try:
             amount = float(amount)
-        except:
+        except ValueError:
             flash("Invalid amount", "danger")
-            return redirect(url_for('add_payment'))
+            return redirect(url_for("add_payment"))
         if amount <= 0:
             flash("Amount must be greater than 0", "danger")
-            return redirect(url_for('add_payment'))
+            return redirect(url_for("add_payment"))
         if amount > 1000000:
             flash("Amount too large", "danger")
-            return redirect(url_for('add_payment'))
+            return redirect(url_for("add_payment"))
 
-        cur.execute("""
-            INSERT INTO payments (tenant_id, amount_paid, payment_date, payment_method, mpesa_code, payment_month)
-    VALUES (%s, %s, %s, %s, %s, %s)
-""", (tenant_id, amount, payment_date, method, mpesa_code, payment_month))
+        db.session.add(
+            Payment(
+                tenant_id=tenant_id,
+                amount_paid=amount,
+                payment_date=payment_date,
+                payment_method=method,
+                mpesa_code=mpesa_code,
+                payment_month=payment_month,
+            )
+        )
+        db.session.commit()
+        return redirect(url_for("payments"))
+    return render_template("add_payment.html", tenants=tenants_rows)
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('payments'))
-    return render_template('add_payment.html', tenants=tenants)
-#Viewing Payments Route
-@app.route('/payments')
+
+@app.route("/payments")
 def payments():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT payments.id, tenants.full_name, payments.amount_paid,
-               payments.payment_date, payments.payment_method, payments.mpesa_code
-        FROM payments
-        JOIN tenants ON payments.tenant_id = tenants.id
-        ORDER BY payments.id DESC
-    """)
-    payments = cur.fetchall()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    cur.close()
-    conn.close()
-    return render_template('payments.html', payments=payments)
+    payments_list = (
+        db.session.query(
+            Payment.id,
+            Tenant.full_name,
+            Payment.amount_paid,
+            Payment.payment_date,
+            Payment.payment_method,
+            Payment.mpesa_code,
+        )
+        .join(Tenant, Payment.tenant_id == Tenant.id)
+        .order_by(Payment.id.desc())
+        .all()
+    )
+
+    return render_template("payments.html", payments=payments_list)
 
 
-#Arrears Route
-@app.route('/arrears')
+@app.route("/arrears")
 def arrears():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    current_month = date.today().replace(day=1)
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    current_month = date.today().replace(day=1).isoformat()
+    arrears_sql = text(
+        """
        SELECT tenants.full_name,
                units.unit_number,
                units.rent_amount,
@@ -411,194 +352,148 @@ def arrears():
                (units.rent_amount - COALESCE(SUM(payments.amount_paid), 0)) AS balance
         FROM tenants
         JOIN units ON tenants.unit_id = units.id
-        LEFT JOIN payments 
-            ON tenants.id = payments.tenant_id 
-            AND payments.payment_month = %s
+        LEFT JOIN payments
+            ON tenants.id = payments.tenant_id
+            AND payments.payment_month = :payment_month
         GROUP BY tenants.full_name, units.unit_number, units.rent_amount
         HAVING (units.rent_amount - COALESCE(SUM(payments.amount_paid), 0)) > 0
-    """, (current_month,))
-    arrears = cur.fetchall()
+    """
+    )
+    arrears_rows = db.session.execute(arrears_sql, {"payment_month": current_month}).all()
 
-    cur.close()
-    conn.close()
+    return render_template("arrears.html", arrears=arrears_rows)
 
-    return render_template('arrears.html', arrears=arrears)
-#Receipt Route
-@app.route('/receipt/<int:payment_id>')
-def receipt (payment_id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
 
-    cur.execute("""
-        SELECT tenants.full_name, payments.amount_paid,
-               payments.payment_date, payments.payment_method, payments.mpesa_code
-        FROM payments
-        JOIN tenants ON payments.tenant_id = tenants.id
-        WHERE payments.id = %s
-    """, (payment_id,))
-    payment = cur.fetchone()
+@app.route("/receipt/<int:payment_id>")
+def receipt(payment_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    cur.close()
-    conn.close()
-    #creating pdf
+    row = (
+        db.session.query(
+            Tenant.full_name,
+            Payment.amount_paid,
+            Payment.payment_date,
+            Payment.payment_method,
+            Payment.mpesa_code,
+        )
+        .join(Tenant, Payment.tenant_id == Tenant.id)
+        .filter(Payment.id == payment_id)
+        .first()
+    )
+
+    if not row:
+        flash("Payment not found", "danger")
+        return redirect(url_for("payments"))
+
     file_name = f"receipt_{payment_id}.pdf"
     pdf = SimpleDocTemplate(file_name)
     styles = getSampleStyleSheet()
 
-    content = []
-
-    content.append(Paragraph("RENT RECEIPT", styles['Title']))
-    content.append(Spacer(1, 10))
-
-    content.append(Paragraph(f"Tenant: {payment[0]}", styles['Normal']))
-    content.append(Paragraph(f"Amount: KES {payment[1]}", styles['Normal']))
-    content.append(Paragraph(f"Date: {payment[2]}", styles['Normal']))
-    content.append(Paragraph(f"Method: {payment[3]}", styles['Normal']))
-    content.append(Paragraph(f"M-Pesa Code: {payment[4]}", styles['Normal']))
+    content = [
+        Paragraph("RENT RECEIPT", styles["Title"]),
+        Spacer(1, 10),
+        Paragraph(f"Tenant: {row.full_name}", styles["Normal"]),
+        Paragraph(f"Amount: KES {row.amount_paid}", styles["Normal"]),
+        Paragraph(f"Date: {row.payment_date}", styles["Normal"]),
+        Paragraph(f"Method: {row.payment_method}", styles["Normal"]),
+        Paragraph(f"M-Pesa Code: {row.mpesa_code or ''}", styles["Normal"]),
+    ]
 
     pdf.build(content)
 
     return send_file(file_name, as_attachment=True)
-#Edit Route
-@app.route('/edit_property/<int:id>', methods=['GET', 'POST'])
+
+
+@app.route("/edit_property/<int:id>", methods=["GET", "POST"])
 def edit_property(id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    if request.method == 'POST':
-        name = request.form['name']
-        location = request.form['location']
-        cur.execute("""
-            UPDATE properties
-            SET name=%s, location=%s
-            WHERE id=%s
-        """, (name, location, id))
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('properties'))
-    cur.execute("SELECT * FROM properties WHERE id=%s", (id,))
-    property = cur.fetchone()
-    cur.close()
-    conn.close()
-    return render_template('edit_property.html', property=property)
-#Edit Tenant Route
-@app.route('/edit_tenant/<int:id>', methods=['GET', 'POST'])
+    prop = db.session.get(Property, id)
+    if prop is None:
+        abort(404)
+
+    if request.method == "POST":
+        prop.name = request.form["name"]
+        prop.location = request.form["location"]
+        db.session.commit()
+        return redirect(url_for("properties"))
+
+    return render_template("edit_property.html", property=prop)
+
+
+@app.route("/edit_tenant/<int:id>", methods=["GET", "POST"])
 def edit_tenant(id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    if request.method == 'POST':
-        full_name = request.form['full_name']
-        phone = request.form['phone']
-        id_number = request.form['id_number']
+    tenant = db.session.get(Tenant, id)
+    if tenant is None:
+        abort(404)
 
-        cur.execute("""
-            UPDATE tenants
-            SET full_name=%s, phone=%s, id_number=%s
-            WHERE id=%s
-        """, (full_name, phone, id_number, id))
+    if request.method == "POST":
+        tenant.full_name = request.form["full_name"]
+        tenant.phone = request.form["phone"]
+        tenant.id_number = request.form["id_number"]
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('tenants'))
-    cur.execute("SELECT * FROM tenants WHERE id=%s", (id,))
-    tenant = cur.fetchone()
-    cur.close()
-    conn.close()
-    return render_template('edit_tenant.html', tenant=tenant)
+        db.session.commit()
+        return redirect(url_for("tenants"))
+
+    return render_template("edit_tenant.html", tenant=tenant)
 
 
-@app.route('/edit_payment/<int:id>', methods=['GET', 'POST'])
+@app.route("/edit_payment/<int:id>", methods=["GET", "POST"])
 def edit_payment(id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    conn =get_db_connection()
-    cur = conn.cursor()
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-    cur.execute("SELECT id, full_name FROM tenants")
-    tenants = cur.fetchall()
+    payment = db.session.get(Payment, id)
+    if payment is None:
+        abort(404)
+    tenants_rows = Tenant.query.with_entities(Tenant.id, Tenant.full_name).all()
 
-    if request.method == 'POST':
-        tenant_id = request.form['tenant_id']
-        amount = request.form ['amount']
-        payment_date = request.form['payment_date']
-        method = request.form['payment_method']
-        mpesa_code = request.form['mpesa_code']
+    if request.method == "POST":
+        payment.tenant_id = int(request.form["tenant_id"])
+        payment.amount_paid = float(request.form["amount"])
+        payment.payment_date = request.form["payment_date"]
+        payment.payment_method = request.form["payment_method"]
+        payment.mpesa_code = request.form["mpesa_code"]
 
-        cur.execute("""
-            UPDATE payments
-            SET tenant_id=%s,
-                amount_paid=%s,
-                payment_date=%s,
-                payment_method=%s,
-                mpesa_code=%s
-            WHERE id=%s
-        """, (tenant_id, amount, payment_date, method, mpesa_code, id))
+        db.session.commit()
+        return redirect(url_for("payments"))
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect(url_for('payments'))
-    
-    cur.execute("SELECT * FROM payments WHERE id=%s", (id,))
-    payment = cur.fetchone()
+    return render_template("edit_payment.html", payment=payment, tenants=tenants_rows)
 
-    cur.close()
-    conn.close()
 
-    return render_template('edit_payment.html', payment=payment, tenants=tenants)
-
-#Registering Route
-@app.route('/register', methods=['GET', 'POST'])
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
         if not username or not password:
             flash("All fields are required", "danger")
-            return redirect(url_for('register'))
+            return redirect(url_for("register"))
 
         hashed_password = generate_password_hash(password)
 
-        conn = get_db_connection()
-        cur = conn.cursor()
+        db.session.add(User(username=username, password=hashed_password))
 
         try:
-            cur.execute("""
-                INSERT INTO users (username, password)
-                VALUES (%s, %s)
-            """, (username, hashed_password))
-
-            conn.commit()
+            db.session.commit()
             flash("Account created successfully", "success")
-            return redirect(url_for('login'))
-
-        except sqlite3.IntegrityError:
-            conn.rollback()
+            return redirect(url_for("login"))
+        except IntegrityError:
+            db.session.rollback()
             flash("Username already exists. Try another.", "danger")
 
-        finally:
-            cur.close()
-            conn.close()
+    return render_template("register.html")
 
-    return render_template('register.html')
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(
         debug=os.getenv("FLASK_DEBUG", "0") == "1",
         host="0.0.0.0",
         port=int(os.getenv("PORT", "5000")),
     )
-
-
-

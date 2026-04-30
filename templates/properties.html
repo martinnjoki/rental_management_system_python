@@ -15,11 +15,11 @@
     </tr>
     {% for property in properties %}
     <tr>
-        <td>{{ property[0] }}</td>
-        <td>{{ property[2] }}</td>
-        <td>{{ property[3] }}</td>
+        <td>{{ property.id }}</td>
+        <td>{{ property.name }}</td>
+        <td>{{ property.location }}</td>
         <td>
-            <a href="/edit_property/{{ property[0] }}" class="btn btn-sm btn-warning">Edit</a>
+            <a href="/edit_property/{{ property.id }}" class="btn btn-sm btn-warning">Edit</a>
         </td>
     </tr>
 

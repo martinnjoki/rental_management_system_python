@@ -24,13 +24,25 @@
 
         /* HERO SECTION */
         .hero {
-            background:
-                linear-gradient(rgba(0, 0, 0, .60), rgba(0, 0, 0, .60)),
-                url('/static/images/property.jpg');
-            background-size: cover;
-            background-position: center;
+            position: relative;
             min-height: 100vh;
             color: white;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 0;
+        }
+
+        .hero .navbar,
+        .hero .hero-inner {
+            position: relative;
+            z-index: 1;
         }
 
         /* KEEP NAVBAR STYLE */
@@ -97,47 +109,287 @@
             margin-bottom: 50px;
         }
 
+        #about.section-about {
+            background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+        }
+
+        #about .section-title {
+            margin-bottom: 0.75rem;
+        }
+
+        #about .section-title-sub {
+            display: block;
+            max-width: 520px;
+            margin: 0 auto 2.5rem;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #6c757d;
+        }
+
+        #about .about-copy {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #343a40;
+        }
+
+        #about .about-copy .lead {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        #about .why-panel {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #ff3b3b;
+            height: 100%;
+        }
+
+        #about .why-panel h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            color: #212529;
+        }
+
+        #about .why-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            margin-bottom: 0.85rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #495057;
+        }
+
+        #about .why-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        #about .why-list .bi {
+            color: #ff3b3b;
+            font-size: 1.15rem;
+            margin-top: 0.15rem;
+            flex-shrink: 0;
+        }
+
+        /* SERVICES */
+        #services.section-services {
+            background: linear-gradient(180deg, #f1f3f5 0%, #f8f9fa 50%, #f1f3f5 100%);
+        }
+
+        #services .section-title {
+            margin-bottom: 0.75rem;
+        }
+
+        #services .section-title-sub {
+            display: block;
+            max-width: 560px;
+            margin: 0 auto 2.5rem;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #6c757d;
+            text-align: center;
+        }
+
         .service-card {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, .08);
-            transition: .3s;
+            border-radius: 12px;
+            padding: 2rem 1.75rem;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
             height: 100%;
             text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            border-top: 3px solid transparent;
         }
 
         .service-card:hover {
-            transform: translateY(-8px);
+            transform: translateY(-6px);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.1);
+            border-top-color: #ff3b3b;
         }
 
         .service-card i {
-            font-size: 42px;
+            font-size: 2.5rem;
             color: #ff3b3b;
         }
 
-        .contact-box {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 10px;
+        .service-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            color: #212529;
         }
 
-        footer {
-            background: #111;
-            color: white;
+        .service-card p {
+            margin-bottom: 0;
+            font-size: 0.98rem;
+            line-height: 1.65;
+            color: #495057;
+        }
+
+        /* CONTACT */
+        #contact.section-contact {
+            background: #fff;
+        }
+
+        #contact .section-title {
+            margin-bottom: 0.75rem;
+        }
+
+        #contact .section-title-sub {
+            display: block;
+            max-width: 540px;
+            margin: 0 auto 2.5rem;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #6c757d;
             text-align: center;
-            padding: 30px 0;
         }
 
-        footer a {
-            color: white;
-            margin: 0 10px;
-            font-size: 20px;
+        .contact-panel {
+            background: #fafbfc;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            height: 100%;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .contact-panel h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            color: #212529;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #ff3b3b;
+        }
+
+        .contact-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #343a40;
+        }
+
+        .contact-detail:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .contact-detail .bi {
+            color: #ff3b3b;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .contact-detail a {
+            color: #0d6efd;
+            text-decoration: none;
+            word-break: break-word;
+        }
+
+        .contact-detail a:hover {
+            text-decoration: underline;
+        }
+
+        #contact .form-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        #contact .contact-form-hint {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 1rem;
+        }
+
+        /* FOOTER */
+        .site-footer {
+            background: linear-gradient(180deg, #1a1a1a 0%, #111 100%);
+            color: #e9ecef;
+            padding: 3rem 0 2rem;
+            border-top: 3px solid #ff3b3b;
+        }
+
+        .site-footer .footer-brand {
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fff;
+            margin-bottom: 0.35rem;
+        }
+
+        .site-footer .footer-tagline {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 1.25rem;
+        }
+
+        .site-footer .footer-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .site-footer .footer-nav a {
+            color: #dee2e6;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .site-footer .footer-nav a:hover {
+            color: #ff3b3b;
+        }
+
+        .site-footer .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .site-footer .footer-social a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1.25rem;
+            text-decoration: none;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .site-footer .footer-social a:hover {
+            background: #ff3b3b;
+            color: #fff;
+        }
+
+        .site-footer .footer-copy {
+            text-align: center;
+            font-size: 0.875rem;
+            color: #868e96;
+            margin: 0;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         @media(max-width:768px) {
             .hero-content {
-                padding-top: 180px;
+                padding-top: 120px;
+                padding-bottom: 60px;
             }
 
             .hero-content h1 {
@@ -151,22 +403,21 @@
             .navbar {
                 padding: 15px 20px;
             }
+
+            #about .why-panel {
+                margin-top: 1.5rem;
+            }
         }
     </style>
 </head>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-
-<script>
-    AOS.init({
-        duration: 1000,
-        once: true
-    });
-</script>
 
 <body>
 
     <!-- HERO -->
-    <div class="hero">
+    <div class="hero"
+        style="background-image: url('{{ url_for('static', filename='images/bilding-1.jpg') }}');">
+
+        <div class="hero-overlay" aria-hidden="true"></div>
 
         <!-- KEEP YOUR NAVBAR STYLE -->
         <nav class="navbar navbar-expand-lg">
@@ -183,8 +434,7 @@
         </nav>
 
         <!-- IMPROVED HERO -->
-        <div class="container hero-content" id="home">
-
+        <div class="container hero-content hero-inner" id="home">
             <h1>Mbungu Properties Management Limited</h1>
 
             <p>
@@ -204,31 +454,53 @@
     </div>
 
     <!-- ABOUT -->
-    <section id="about">
+    <section id="about" class="section-about">
         <div class="container">
             <h2 class="section-title">About Mbungu Properties</h2>
+            <span class="section-title-sub">
+                Professional rental operations built around landlords and tenants in Kenya.
+            </span>
 
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p>
-                        Mbungu Properties offers professional rental management
-                        services focused on helping landlords collect rent,
-                        manage tenants and monitor vacancies easily.
-                    </p>
-
-                    <p>
-                        Our goal is to simplify property ownership using modern
-                        technology and reliable management solutions.
-                    </p>
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-6">
+                    <div class="about-copy">
+                        <p class="lead mb-3">
+                            We help you run rentals with less paperwork and clearer visibility into rent,
+                            occupancy, and arrears.
+                        </p>
+                        <p class="mb-3">
+                            Mbungu Properties Management Limited delivers structured tenant records,
+                            payment tracking, and vacancy awareness so owners can focus on decisions—not
+                            spreadsheets.
+                        </p>
+                        <p class="mb-0">
+                            Our aim is straightforward: dependable processes and modern tools that keep
+                            your portfolio organized and your cash flow predictable.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="contact-box">
-                        <h5>Why Choose Us?</h5>
-                        <p>✔ Reliable Tenant Management</p>
-                        <p>✔ Easy Rent Tracking</p>
-                        <p>✔ Arrears Monitoring</p>
-                        <p>✔ Professional Support</p>
+                <div class="col-lg-6">
+                    <div class="why-panel">
+                        <h3>Why choose us</h3>
+                        <ul class="why-list list-unstyled mb-0">
+                            <li>
+                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                <span><strong>Tenant management</strong> — onboarding, contacts, and unit linkage in one place.</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                <span><strong>Rent tracking</strong> — record payments and methods with a clear monthly view.</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                <span><strong>Arrears visibility</strong> — see who is behind relative to expected rent.</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                <span><strong>Professional support</strong> — aligned with how Kenyan landlords and agents work.</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -236,33 +508,42 @@
     </section>
 
     <!-- SERVICES -->
-    <section class="bg-light">
+    <section id="services" class="section-services">
         <div class="container">
             <h2 class="section-title">Our Services</h2>
+            <span class="section-title-sub">
+                Practical tools for listings, rent, and tenant operations—matched to how this platform works today.
+            </span>
 
-            <div class="row g-4">
+            <div class="row g-4 justify-content-center">
 
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-4">
                     <div class="service-card">
-                        <i class="bi bi-house-door"></i>
-                        <h4 class="mt-3">Property Management</h4>
-                        <p>Manage houses, flats and rental units professionally.</p>
+                        <i class="bi bi-house-door" aria-hidden="true"></i>
+                        <h3>Property &amp; units</h3>
+                        <p>
+                            Register properties and units, set rent amounts, and see which homes are vacant or occupied.
+                        </p>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-4">
                     <div class="service-card">
-                        <i class="bi bi-cash-stack"></i>
-                        <h4 class="mt-3">Rent Collection</h4>
-                        <p>Track payments, receipts and monthly arrears easily.</p>
+                        <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                        <h3>Rent &amp; receipts</h3>
+                        <p>
+                            Record payments with dates and methods (including M-Pesa codes), download receipts, and review history.
+                        </p>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-4">
                     <div class="service-card">
-                        <i class="bi bi-people"></i>
-                        <h4 class="mt-3">Tenant Records</h4>
-                        <p>Keep organized tenant details and occupancy status.</p>
+                        <i class="bi bi-people" aria-hidden="true"></i>
+                        <h3>Tenants &amp; arrears</h3>
+                        <p>
+                            Maintain tenant profiles tied to units and spot arrears against expected monthly rent at a glance.
+                        </p>
                     </div>
                 </div>
 
@@ -271,31 +552,67 @@
     </section>
 
     <!-- CONTACT -->
-    <section id="contact">
+    <section id="contact" class="section-contact">
         <div class="container">
             <h2 class="section-title">Contact Us</h2>
+            <span class="section-title-sub">
+                Reach the team directly—we typically respond fastest by phone or email.
+            </span>
 
-            <div class="row g-4">
+            <div class="row g-4 align-items-stretch">
 
-                <div class="col-md-6">
-                    <div class="contact-box">
-                        <h5>Office Details</h5>
-                        <p><strong>Phone:</strong> +254702617968</p>
-                        <p><strong>Email:</strong> martinmbungunjoki@gmail.com</p>
-                        <p><strong>Location:</strong> Nairobi, Kenya</p>
+                <div class="col-lg-5">
+                    <div class="contact-panel">
+                        <h3>Office details</h3>
+                        <div class="contact-detail">
+                            <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                            <div>
+                                <strong>Phone</strong><br>
+                                <a href="tel:+254702617968">+254 702 617 968</a>
+                            </div>
+                        </div>
+                        <div class="contact-detail">
+                            <i class="bi bi-envelope-fill" aria-hidden="true"></i>
+                            <div>
+                                <strong>Email</strong><br>
+                                <a href="mailto:martinmbungunjoki@gmail.com">martinmbungunjoki@gmail.com</a>
+                            </div>
+                        </div>
+                        <div class="contact-detail">
+                            <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                            <div>
+                                <strong>Location</strong><br>
+                                Nairobi, Kenya
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="contact-box">
-                        <form>
-                            <input type="text" class="form-control mb-3" placeholder="Your Name">
-                            <input type="email" class="form-control mb-3" placeholder="Your Email">
-                            <textarea class="form-control mb-3" rows="4" placeholder="Your Message"></textarea>
-
-                            <button class="btn btn-main">
-                                Send Message
+                <div class="col-lg-7">
+                    <div class="contact-panel">
+                        <h3>Send a message</h3>
+                        <form id="contact-form" novalidate>
+                            <div class="mb-3">
+                                <label class="form-label" for="contact-name">Your name</label>
+                                <input type="text" class="form-control" id="contact-name" name="name"
+                                    autocomplete="name" placeholder="Full name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="contact-email">Email</label>
+                                <input type="email" class="form-control" id="contact-email" name="email"
+                                    autocomplete="email" placeholder="you@example.com" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="contact-message">Message</label>
+                                <textarea class="form-control" id="contact-message" name="message" rows="4"
+                                    placeholder="How can we help?" required></textarea>
+                            </div>
+                            <button type="button" class="btn btn-main" id="contact-send-btn">
+                                Open email to send
                             </button>
+                            <p class="contact-form-hint mb-0">
+                                Opens your mail app with this message addressed to us—no data is stored on the server from this form.
+                            </p>
                         </form>
                     </div>
                 </div>
@@ -305,14 +622,61 @@
     </section>
 
     <!-- FOOTER -->
-    <footer>
-        <p>© Mbungu Properties Management Limited. All Rights Reserved</p>
+    <footer class="site-footer">
+        <div class="container text-center">
+            <div class="footer-brand">Mbungu Properties Management Limited</div>
+            <p class="footer-tagline mb-0">Rental management built for landlords and operators in Kenya.</p>
 
-        <a href="#"><i class="bi bi-facebook"></i></a>
-        <a href="#"><i class="bi bi-instagram"></i></a>
-        <a href="#"><i class="bi bi-linkedin"></i></a>
+            <nav class="footer-nav" aria-label="Footer navigation">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#services">Services</a>
+                <a href="#contact">Contact</a>
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            </nav>
+
+            <div class="footer-social">
+                <a href="#" aria-label="Facebook (add your profile URL)"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+                <a href="#" aria-label="Instagram (add your profile URL)"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+                <a href="#" aria-label="LinkedIn (add your profile URL)"><i class="bi bi-linkedin" aria-hidden="true"></i></a>
+            </div>
+
+            <p class="footer-copy">
+                © 2026 Mbungu Properties Management Limited. All rights reserved.
+            </p>
+        </div>
     </footer>
 
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+
+        (function () {
+            var btn = document.getElementById('contact-send-btn');
+            var form = document.getElementById('contact-form');
+            if (!btn || !form) return;
+            btn.addEventListener('click', function () {
+                var nameEl = document.getElementById('contact-name');
+                var emailEl = document.getElementById('contact-email');
+                var msgEl = document.getElementById('contact-message');
+                var name = nameEl && nameEl.value.trim();
+                var email = emailEl && emailEl.value.trim();
+                var message = msgEl && msgEl.value.trim();
+                if (!name || !email || !message) {
+                    form.reportValidity();
+                    return;
+                }
+                var subject = 'Website enquiry from ' + name;
+                var body = 'Name: ' + name + '\nEmail: ' + email + '\n\n' + message;
+                window.location.href = 'mailto:martinmbungunjoki@gmail.com?subject=' +
+                    encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+            });
+        })();
+    </script>
 </body>
 
 </html>

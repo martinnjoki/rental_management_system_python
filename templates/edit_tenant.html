@@ -4,11 +4,11 @@
 
 <form method="POST">
 
-    <input type="text" name="full_name" class="form-control mb-3" value="{{ tenant[2] }}" required>
+    <input type="text" name="full_name" class="form-control mb-3" value="{{ tenant.full_name }}" required>
 
-    <input type="text" name="phone" class="form-control mb-3" value="{{ tenant[3] }}" required>
+    <input type="text" name="phone" class="form-control mb-3" value="{{ tenant.phone }}" required>
 
-    <input type="text" name="id_number" class="form-control mb-3" value="{{ tenant[4] }}" required>
+    <input type="text" name="id_number" class="form-control mb-3" value="{{ tenant.id_number }}" required>
 
     <button class="btn btn-success">Update Tenant</button>
 

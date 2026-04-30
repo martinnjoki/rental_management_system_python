@@ -5,6 +5,7 @@ __pycache__/
 .git/
 .gitignore
 .env
+docker-compose.override.yml
 venv/
 .venv/
 *.db

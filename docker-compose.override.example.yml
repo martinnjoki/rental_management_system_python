@@ -1,0 +1,9 @@
+# Copy to `docker-compose.override.yml` (gitignored recommended) so Compose merges it automatically.
+# Localhost-only publish — use behind Nginx on the same VPS.
+#
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+
+services:
+  web:
+    ports:
+      - "127.0.0.1:5050:5050"
