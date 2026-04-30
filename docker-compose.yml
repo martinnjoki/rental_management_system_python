@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: rental_management_web
+    ports:
+      - "5050:5050"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      DB_PATH: ${DB_PATH:-/data/rental_system.db}
+      FLASK_DEBUG: 0
+      PORT: 5050
+    volumes:
+      - rental_data:/data
+    restart: unless-stopped
+
+volumes:
+  rental_data:

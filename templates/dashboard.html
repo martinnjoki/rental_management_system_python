@@ -1,75 +1,135 @@
+Dashboard.html
+
 {% extends 'base.html' %}
 
 {% block content %}
 
-<div class="container mt-4">
+<div class="container-fluid p-4">
 
-    <h3 class="mb-4">Dashboard Overview</h3>
+    <!-- Welcome Banner -->
+    <div class="p-4 rounded text-white mb-4" style="background: linear-gradient(135deg,#1d3557,#457b9d);">
 
-    <div class="row">
+        <h2 class="fw-bold">Welcome Back 👋</h2>
+        <p class="mb-0">
+            Manage your rentals, tenants and payments professionally.
+        </p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4">
 
         <!-- Properties -->
-        <div class="col-md-4 mb-3">
-            <div class="card shadow border-0 text-white bg-primary">
-                <div class="card-body">
-                    <h5>Total Properties</h5>
-                    <h2>{{ total_properties }}</h2>
-                    <i class="bi bi-building fs-1"></i>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Properties</p>
+                        <h2 class="fw-bold">{{ total_properties }}</h2>
+                    </div>
+                    <div class="bg-primary text-white p-3 rounded-circle">
+                        <i class="bi bi-building fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Units -->
-        <div class="col-md-4 mb-3">
-            <div class="card shadow border-0 text-white bg-success">
-                <div class="card-body">
-                    <h5>Total Units</h5>
-                    <h2>{{ total_units }}</h2>
-                    <i class="bi bi-house-door fs-1"></i>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Units</p>
+                        <h2 class="fw-bold">{{ total_units }}</h2>
+                    </div>
+                    <div class="bg-success text-white p-3 rounded-circle">
+                        <i class="bi bi-house-door fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Tenants -->
-        <div class="col-md-4 mb-3">
-            <div class="card shadow border-0 text-white bg-info">
-                <div class="card-body">
-                    <h5>Total Tenants</h5>
-                    <h2>{{ total_tenants }}</h2>
-                    <i class="bi bi-people fs-1"></i>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tenants</p>
+                        <h2 class="fw-bold">{{ total_tenants }}</h2>
+                    </div>
+                    <div class="bg-info text-white p-3 rounded-circle">
+                        <i class="bi bi-people fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Payments -->
-        <div class="col-md-6 mb-3">
-            <div class="card shadow border-0 text-white bg-dark">
-                <div class="card-body">
-                    <h5>Total Payments (KES)</h5>
-                    <h2>{{ total_payments }}</h2>
-                    <i class="bi bi-cash-stack fs-1"></i>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Total Payments</p>
+                        <h2 class="fw-bold text-success">
+                            KES {{ "{:,.0f}".format(total_payments) }}
+                        </h2>
+                    </div>
+                    <div class="bg-dark text-white p-3 rounded-circle">
+                        <i class="bi bi-cash-stack fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Arrears -->
-        <div class="col-md-6 mb-3">
-            <div class="card shadow border-0 text-white bg-danger">
-                <div class="card-body">
-                    <h5>Tenants in Arrears</h5>
-                    <h2>{{ arrears_count }}</h2>
-                    <i class="bi bi-exclamation-triangle fs-1"></i>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tenants in Arrears</p>
+                        <h2 class="fw-bold text-danger">
+                            {{ arrears_count }}
+                        </h2>
+                    </div>
+                    <div class="bg-danger text-white p-3 rounded-circle">
+                        <i class="bi bi-exclamation-triangle fs-3"></i>
+                    </div>
                 </div>
             </div>
         </div>
-        <!--Vacant Units-->
-        <div class="card bg-warning text-white">
-            <div class="card-body">
-                <h5>Vacant Units</h5>
-                <h2>{{ vacant_units }}</h2>
-            </div>
-        </div>
 
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-5">
+        <h4 class="fw-bold mb-3">Quick Actions</h4>
+
+        <div class="row g-3">
+
+            <div class="col-md-3">
+                <a href="{{ url_for('add_property') }}" class="btn btn-primary w-100 p-3 rounded-3">
+                    + Add Property
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a href="{{ url_for('add_unit') }}" class="btn btn-success w-100 p-3 rounded-3">
+                    + Add Unit
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a href="{{ url_for('add_tenant') }}" class="btn btn-info w-100 p-3 rounded-3 text-white">
+                    + Add Tenant
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a href="{{ url_for('add_payment') }}" class="btn btn-dark w-100 p-3 rounded-3">
+                    + Add Payment
+                </a>
+            </div>
+
+        </div>
     </div>
 
 </div>
