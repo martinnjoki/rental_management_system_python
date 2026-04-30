@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
-# Build and run the rental app with Docker Compose (Docker Compose V2 plugin).
+# Build and run the rental app with Docker Compose (V2 plugin or legacy docker-compose).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
+
+# Prefer `docker compose` (Compose V2 plugin). Ubuntu docker.io alone often lacks it — see README hint below.
+compose_cmd() {
+  if docker compose version >/dev/null 2>&1; then
+    docker compose "$@"
+  elif docker-compose --version >/dev/null 2>&1; then
+    docker-compose "$@"
+  else
+    echo "Docker Compose is not available." >&2
+    echo "On Ubuntu 22.04 install the plugin, then log out and back in:" >&2
+    echo "  sudo apt update && sudo apt install -y docker-compose-v2" >&2
+    echo "Or use standalone: sudo apt install -y docker-compose" >&2
+    exit 1
+  fi
+}
 
 usage() {
   echo "Usage: $0 [command]"
@@ -26,29 +41,29 @@ ensure_env_hint() {
 
 case "${1:-up}" in
   build)
-    docker compose build --pull
+    compose_cmd build --pull
     ;;
   up)
     ensure_env_hint
-    docker compose up -d --build
-    docker compose ps
+    compose_cmd up -d --build
+    compose_cmd ps
     echo ""
     echo "App: http://127.0.0.1:${DOCKER_HOST_PORT:-5050}/healthz"
     ;;
   down)
-    docker compose down
+    compose_cmd down
     ;;
   restart)
-    docker compose restart web
+    compose_cmd restart web
     ;;
   logs)
-    docker compose logs -f web
+    compose_cmd logs -f web
     ;;
   ps)
-    docker compose ps -a
+    compose_cmd ps -a
     ;;
   shell)
-    docker compose exec web bash -il || docker compose exec web sh -il
+    compose_cmd exec web bash -il || compose_cmd exec web sh -il
     ;;
   -h|--help|help)
     usage

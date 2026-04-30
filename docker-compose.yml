@@ -1,38 +1,34 @@
-# Rental management stack — SQLite persisted under named volume `rental_data`.
-#
-# VPS tip (Nginx on host): bind only localhost — use either:
-#   ports:
-#     - "127.0.0.1:5050:5050"
-# or set COMPOSE_PROFILES and use compose.override (see comments below).
+version: "3.9"
 
 services:
   web:
     build:
       context: .
       dockerfile: Dockerfile
+
     image: rental-management-web:latest
     container_name: rental_management_web
+
     ports:
-      # Host:container — change left side or prefix with 127.0.0.1 for local-only bind
-      - "${DOCKER_HOST_PORT:-5050}:5050"
+      - "5050:5050"
+
     environment:
-      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
-      DB_PATH: ${DB_PATH:-/data/rental_system.db}
+      SECRET_KEY: change-this-in-production
+      DB_PATH: /data/rental_system.db
       FLASK_DEBUG: "0"
       PORT: "5050"
-      # SQLite: keep workers at 1 unless you migrate to PostgreSQL
-      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
-      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      GUNICORN_WORKERS: "1"
+      GUNICORN_TIMEOUT: "60"
+
+    # FIX: use your local ./data folder instead of named volume
     volumes:
-      - rental_data:/data
+      - ./data:/data
+
     restart: unless-stopped
+
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5050/healthz >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 45s
-
-volumes:
-  rental_data:
-    name: rental_management_data
