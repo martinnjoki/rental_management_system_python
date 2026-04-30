@@ -89,6 +89,11 @@ init_db()
 @app.route('/')
 def home():
     return render_template('home.html')
+
+
+@app.route('/healthz')
+def healthz():
+    return {"status": "ok"}, 200
 #login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
