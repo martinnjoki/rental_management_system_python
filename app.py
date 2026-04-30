@@ -4,8 +4,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from psycopg2 import errors
-import psycopg2
+import os
+import sqlite3
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -14,19 +15,71 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+class SQLiteCursorAdapter:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, query, params=None):
+        sqlite_query = query.replace("%s", "?")
+        if params is None:
+            return self._cursor.execute(sqlite_query)
+        return self._cursor.execute(sqlite_query, params)
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def close(self):
+        return self._cursor.close()
+
+
+class SQLiteConnectionAdapter:
+    def __init__(self, connection):
+        self._connection = connection
+
+    def cursor(self):
+        return SQLiteCursorAdapter(self._connection.cursor())
+
+    def commit(self):
+        return self._connection.commit()
+
+    def rollback(self):
+        return self._connection.rollback()
+
+    def close(self):
+        return self._connection.close()
+
+
+def get_database_path():
+    configured_path = os.getenv("DB_PATH", "data/rental_system.db")
+    if os.path.isabs(configured_path):
+        return configured_path
+    return os.path.join(os.path.dirname(__file__), configured_path)
+
+
+def init_db():
+    db_path = get_database_path()
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+
+    connection = sqlite3.connect(db_path)
+    with open(schema_path, "r", encoding="utf-8") as schema_file:
+        connection.executescript(schema_file.read())
+    connection.commit()
+    connection.close()
+
+
 def get_db_connection():
-    conn = psycopg2.connect(
-        dbname="rental_system",
-        user="postgres",
-        password="1234",
-        host="localhost",
-        port="5432"
-    )
-    return conn
+    connection = sqlite3.connect(get_database_path())
+    connection.execute("PRAGMA foreign_keys = ON")
+    return SQLiteConnectionAdapter(connection)
 
 
 app = Flask(__name__)
-app.secret_key = 'secret123'
+app.secret_key = os.getenv("SECRET_KEY", "change-this-in-production")
+init_db()
 
 
 
@@ -517,7 +570,7 @@ def register():
             flash("Account created successfully", "success")
             return redirect(url_for('login'))
 
-        except errors.UniqueViolation:
+        except sqlite3.IntegrityError:
             conn.rollback()
             flash("Username already exists. Try another.", "danger")
 
@@ -528,7 +581,11 @@ def register():
     return render_template('register.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(
+        debug=os.getenv("FLASK_DEBUG", "0") == "1",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000")),
+    )
 
 
 
