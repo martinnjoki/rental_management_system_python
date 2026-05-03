@@ -189,13 +189,18 @@ def add_tenant():
     units = Unit.query.filter_by(status="vacant").with_entities(Unit.id, Unit.unit_number).all()
 
     if request.method == "POST":
-        unit_id = request.form["unit_id"]
-        full_name = request.form["full_name"]
-        phone = request.form["phone"]
-        id_number = request.form["id_number"]
-        move_in_date = request.form["move_in_date"]
-        if not full_name or not phone or not id_number:
+        unit_id = request.form.get("unit_id", "").strip()
+        full_name = request.form.get("full_name", "").strip()
+        phone = request.form.get("phone", "").strip()
+        id_number = request.form.get("id_number", "").strip()
+        move_in_date = request.form.get("move_in_date", "").strip()
+        if not unit_id or not full_name or not phone or not id_number or not move_in_date:
             flash("All fields are required", "danger")
+            return redirect(url_for("add_tenant"))
+        try:
+            unit_id_int = int(unit_id)
+        except ValueError:
+            flash("Invalid unit selected", "danger")
             return redirect(url_for("add_tenant"))
         if not phone.startswith("254") or len(phone) != 12 or not phone.isdigit():
             flash("Phone must be in format 2547XXXXXXXX", "danger")
@@ -204,20 +209,27 @@ def add_tenant():
             flash("ID number must be numeric", "danger")
             return redirect(url_for("add_tenant"))
 
+        unit = db.session.get(Unit, unit_id_int)
+        if unit is None or unit.status != "vacant":
+            flash("That unit is not available. Choose another vacant unit.", "danger")
+            return redirect(url_for("add_tenant"))
+
         tenant = Tenant(
-            unit_id=unit_id,
+            unit_id=unit_id_int,
             full_name=full_name,
             phone=phone,
             id_number=id_number,
             move_in_date=move_in_date,
         )
         db.session.add(tenant)
+        unit.status = "occupied"
 
-        unit = db.session.get(Unit, int(unit_id))
-        if unit:
-            unit.status = "occupied"
-
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("That unit already has a tenant. Refresh and pick another unit.", "danger")
+            return redirect(url_for("add_tenant"))
 
         return redirect(url_for("tenants"))
     return render_template("add_tenant.html", units=units)

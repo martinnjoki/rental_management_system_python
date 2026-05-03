@@ -2,16 +2,18 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
     <title>Create Account | Mbungu Properties</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
         body {
             background:
                 linear-gradient(rgba(0, 0, 0, .65), rgba(0, 0, 0, .65)),
-                url('/static/images/property.jpg');
+                url("{{ url_for('static', filename='images/bilding-1.jpg') }}");
             background-size: cover;
             background-position: center;
             min-height: 100vh;
